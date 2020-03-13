@@ -1,0 +1,15 @@
+{
+    "name": "garbetjie/laravel-jsonapi-resources",
+    "description": "Easily generate JSON:API response structures using Laravel's Resources.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Geoff Garbers",
+            "email": "geoff@garbers.co.za"
+        }
+    ],
+    "require": {
+        "laravel/framework": "^6.0"
+    }
+}
