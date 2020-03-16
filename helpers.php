@@ -1,17 +1,19 @@
 <?php
 
-namespace Garbetjie\JsonApiResources;
+namespace Garbetjie\Laravel\JsonApi;
 
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Enumerable;
 use function array_filter;
 use function array_map;
 use function array_unique;
 use function array_values;
 use function collect;
 use function explode;
+use function is_array;
 use function request;
 
 /**
@@ -44,11 +46,13 @@ function has_includes($request) {
  * @return Collection
  */
 function to_collection($item) {
-    if ($item instanceof Collection) {
+    if ($item instanceof Enumerable) {
         return $item;
     } elseif ($item instanceof Paginator) {
         return collect($item->items());
-    } else {
+    } elseif (is_array($item)) {
         return collect($item);
+    } else {
+        return collect([$item]);
     }
 }
