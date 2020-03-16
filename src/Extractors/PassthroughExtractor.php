@@ -1,12 +1,10 @@
 <?php
 
-namespace Garbetjie\JsonApiResources\Extractors;
+namespace Garbetjie\Laravel\JsonApi\Extractors;
 
-use Garbetjie\JsonApiResources\ExtractorInterface;
-use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Model;
+use Garbetjie\Laravel\JsonApi\ExtractorInterface;
 use Illuminate\Support\Collection;
-use function collect;
+use function Garbetjie\Laravel\JsonApi\to_collection;
 
 /**
  * Adds the given resource to the list of included objects.
@@ -35,6 +33,6 @@ class PassthroughExtractor implements ExtractorInterface
      */
     public function __invoke($resource)
     {
-        return collect($this->resource instanceof Collection ? $this->resource : [$this->resource]);
+        return to_collection($this->resource);
     }
 }

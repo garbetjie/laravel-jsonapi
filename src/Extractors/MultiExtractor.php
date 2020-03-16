@@ -1,12 +1,12 @@
 <?php
 
-namespace Garbetjie\JsonApiResources\Extractors;
+namespace Garbetjie\Laravel\JsonApi\Extractors;
 
-use Garbetjie\JsonApiResources\ExtractorInterface;
-use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Model;
+use Garbetjie\Laravel\JsonApi\ExtractorInterface;
 use Illuminate\Support\Collection;
 use function collect;
+use function Garbetjie\Laravel\JsonApi\to_collection;
+use function get_class;
 
 /**
  * An extractor that consists of other extractors.
@@ -39,7 +39,7 @@ class MultiExtractor implements ExtractorInterface
         $all = collect();
 
         foreach ($this->extractors as $extractor) {
-            $all = $all->concat($extractor->__invoke($resource));
+            $all = $all->concat(to_collection($extractor->__invoke($resource)));
         }
 
         return $all;

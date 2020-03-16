@@ -1,12 +1,11 @@
 <?php
 
-namespace Garbetjie\JsonApiResources\Extractors;
+namespace Garbetjie\Laravel\JsonApi\Extractors;
 
 use Closure;
-use Garbetjie\JsonApiResources\ExtractorInterface;
-use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Model;
+use Garbetjie\Laravel\JsonApi\ExtractorInterface;
 use Illuminate\Support\Collection;
+use function Garbetjie\Laravel\JsonApi\to_collection;
 
 /**
  * Adds the collection returned by the provided closure to the list of resources to be included in the response.
@@ -36,7 +35,7 @@ class ClosureExtractor implements ExtractorInterface
      */
     public function __invoke($resource)
     {
-        return collect(($this->callback)($resource));
+        return to_collection(($this->callback)($resource));
     }
 
 }

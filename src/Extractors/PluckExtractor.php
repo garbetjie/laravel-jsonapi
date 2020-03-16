@@ -1,14 +1,14 @@
 <?php
 
-namespace Garbetjie\JsonApiResources\Extractors;
+namespace Garbetjie\Laravel\JsonApi\Extractors;
 
-use Garbetjie\JsonApiResources\ExtractorInterface;
+use Garbetjie\Laravel\JsonApi\ExtractorInterface;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use function collect;
 use function explode;
-use function Garbetjie\JsonApiResources\to_collection;
+use function Garbetjie\Laravel\JsonApi\to_collection;
 use function is_array;
 
 /**
