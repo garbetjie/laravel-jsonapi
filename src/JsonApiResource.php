@@ -1,24 +1,33 @@
 <?php
 
-namespace Garbetjie\JsonApiResources;
+namespace Garbetjie\Laravel\JsonApi;
 
 use Closure;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\MissingValue;
+use Illuminate\Support\Enumerable;
 use InvalidArgumentException;
+use phpDocumentor\Reflection\Types\Collection;
+use RuntimeException;
 use stdClass;
-use Throwable;
+use function array_keys;
 use function call_user_func;
 use function collect;
 use function count;
 use function get_class;
 use function is_array;
-use function is_callable;
-use function method_exists;
+use function range;
 
 class JsonApiResource extends JsonResource
 {
+    /**
+     * @var Closure[]
+     */
+    protected $collectionExtractors = [];
+
     /**
      * @var string[]
      */
@@ -35,6 +44,36 @@ class JsonApiResource extends JsonResource
     protected $includeExtractors = [];
 
     /**
+     * @param $resource
+     */
+    public function __construct($resource)
+    {
+        parent::__construct($resource);
+
+        $this->setDefaultCollectionExtractors();
+    }
+
+    /**
+     * Sets the default builders used to determine whether a resource is a collection or not.
+     *
+     * @return void
+     */
+    protected function setDefaultCollectionExtractors()
+    {
+        $this->collectionExtractors[Paginator::class] = function (Paginator $paginator) {
+            return $paginator->items();
+        };
+
+        $this->collectionExtractors[Enumerable::class] = function (Enumerable $enumerable) {
+            return $enumerable->all();
+        };
+
+        $this->collectionExtractors['array'] = function (array $array) {
+            return $array;
+        };
+    }
+
+    /**
      * Converts the resource to an array that can be sent to the browser.
      *
      * @param Request $request
@@ -43,6 +82,17 @@ class JsonApiResource extends JsonResource
      */
     public function toArray($request)
     {
+        // We're building a collection
+        if ($builder = $this->getCollectionExtractor()) {
+            return collect($this->collectionExtractors[$builder]($this->resource))
+                ->map(
+                    function ($resource) use ($request) {
+                        return (new JsonApiResource($resource))->toArray($request);
+                    }
+                )
+                ->toArray();
+        }
+
         // Ensure we have an instance of the ResourceableInterface, so that we can create the resource.
         if ($this->resource instanceof ResourceableInterface) {
             $resource = $this->resource;
@@ -55,21 +105,72 @@ class JsonApiResource extends JsonResource
         $type = $resource->getJsonApiType();
         $id = $resource->getJsonApiId();
 
-        $attributes = $this->removeMissingValues($resource->getJsonApiAttributes($request));
-        $links = $this->removeMissingValues($resource->getJsonApiLinks($request));
-        $meta = $this->removeMissingValues($resource->getJsonApiMeta($request));
-        $relationships = $this->removeMissingValues($resource->getJsonApiRelationships($request));
+        // Build up additional properties, and remove any of those that should be removed.
+        $additional = $this->removeMissingValues([
+            'attributes' => $resource->getJsonApiAttributes($request),
+            'links' => $resource->getJsonApiLinks($request),
+            'meta' => $resource->getJsonApiMeta($request),
+            'relationships' => $resource->getJsonApiRelationships($request)
+        ]);
 
         // Convert any empty arrays to objects.
-        foreach (['meta', 'relationships', 'links', 'attributes'] as $var) {
-            if (is_array(${$var}) && count(${$var}) < 1) {
-                ${$var} = new stdClass();
+        foreach ($additional as $key => $value) {
+            if (is_array($value) && count($value) < 1) {
+                $additional[$key] = new stdClass();
             }
         }
 
-        return $this->removeMissingValues(
-            compact('type', 'id', 'attributes', 'links', 'meta', 'relationships')
-        );
+        return ['type' => $type, 'id' => $id] + $additional;
+    }
+
+    /**
+     * Adds a custom collection extractor.
+     *
+     * Collection extractors are used to detect whether a JSON:API resource is a collection of objects. The closure
+     * passed in here should handle the conversion of the given resource to an array of items - however that is implemented.
+     *
+     * @param string $className
+     * @param Closure $builder
+     * @return static
+     */
+    protected function withCollectionExtractor($className, Closure $builder)
+    {
+        $this->collectionExtractors[$className] = $builder;
+
+        return $this;
+    }
+
+    /**
+     * Retrieve the collection extractor required for the current resource. If there is no collection extractor defined,
+     * then it returns null.
+     *
+     * @return string|null
+     */
+    private function getCollectionExtractor()
+    {
+        // Short-circuit to returning true if it is a numerically-indexed PHP array.
+        if (is_array($this->resource) && array_keys($this->resource) === range(0, count($this->resource) - 1)) {
+            return 'array';
+        }
+
+        foreach (array_keys($this->collectionExtractors) as $className) {
+            if ($this->resource instanceof $className) {
+                return $className;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Return a new resource that is made up of a collection.
+     *
+     * @param mixed $resource
+     * @return static
+     */
+    public static function collection($resource)
+    {
+        return new static(to_collection($resource));
     }
 
     /**
@@ -80,7 +181,7 @@ class JsonApiResource extends JsonResource
      */
     public function with($request)
     {
-        $included = $this->removeMissingValues(['included' => $this->buildIncludes($request)]);
+        $included = $this->removeMissingValues(['included' => $this->buildJsonApiIncludes($request)]);
 
         return parent::with($request) + $included;
     }
@@ -143,7 +244,7 @@ class JsonApiResource extends JsonResource
      * @param Request $request
      * @return array|MissingValue
      */
-    protected function buildIncludes($request)
+    protected function buildJsonApiIncludes($request)
     {
         // Get the includes to use.
         $includes = has_includes($request) ? parse_includes($request) : $this->defaultIncludes;
