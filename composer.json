@@ -15,8 +15,20 @@
     },
     "autoload": {
         "psr-4": {
-            "Garbetjie\\JsonApiResources\\": "src/"
+            "Garbetjie\\Laravel\\JsonApi\\": "src/"
         },
         "files": ["helpers.php"]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Garbetjie\\Laravel\\JsonApi\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "justinrainbow/json-schema": "^5.2"
+    },
+    "scripts": {
+        "tests": "phpunit -c phpunit.xml"
     }
 }
