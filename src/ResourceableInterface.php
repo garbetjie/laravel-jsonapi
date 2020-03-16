@@ -1,6 +1,6 @@
 <?php
 
-namespace Garbetjie\JsonApiResources;
+namespace Garbetjie\Laravel\JsonApi;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\MissingValue;

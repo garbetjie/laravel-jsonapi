@@ -1,6 +1,6 @@
 <?php
 
-namespace Garbetjie\JsonApiResources;
+namespace Garbetjie\Laravel\JsonApi;
 
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;

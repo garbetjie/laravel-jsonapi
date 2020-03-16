@@ -1,6 +1,6 @@
 <?php
 
-namespace Garbetjie\JsonApiResources;
+namespace Garbetjie\Laravel\JsonApi;
 
 interface ConvertibleInterface
 {
