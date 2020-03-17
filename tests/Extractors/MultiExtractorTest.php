@@ -26,6 +26,7 @@ class MultiExtractorTest extends TestCase
 
         $extractor = new MultiExtractor([
             new PluckExtractor('one'),
+            new PluckExtractor('one.two'),
             new ClosureExtractor(
                 function (Model $resource) {
                     return collect([$resource->one->two]);
@@ -38,8 +39,8 @@ class MultiExtractorTest extends TestCase
         $collection = $extractor($root);
 
         $this->assertInstanceOf(Collection::class, $collection);
-        $this->assertCount(3, $collection);
-        $this->assertEquals([$one, $two, $three], $collection->all());
+        $this->assertCount(5, $collection);
+        $this->assertEquals([$one, $one, $two, $two, $three], $collection->all());
     }
 
     public function testErrorThrownConstructor()
