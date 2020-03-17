@@ -299,47 +299,4 @@ class JsonApiResourceTest extends TestCase
             ['associative' => 'array']
         ];
     }
-
-    /**
-     * @dataProvider customCollectionExtractorsProvider
-     *
-     * @param string $className
-     * @param Closure $fn
-     * @param mixed $value
-     */
-    public function testCustomCollectionExtractors($className, $fn, $value)
-    {
-        $resource = new JsonApiResource($value);
-        $resource->withCollectionExtractor($className, $fn);
-        $built = $resource->toArray(app(Request::class));
-
-        $this->assertIsArray($built);
-        $this->assertEquals(array_keys($built), range(0, count($built) - 1));
-    }
-
-    public function customCollectionExtractorsProvider()
-    {
-        return [
-            [
-                stdClass::class,
-                function (stdClass $obj) {
-                    return [new MockResource('type', 'id')];
-                },
-                new stdClass(),
-            ],
-
-            [
-                Closure::class,
-                function (Closure $fn) {
-                    return $fn();
-                },
-                function () {
-                    return [
-                        new MockResource('type1', 'id1'),
-                        new MockResource('type2', 'id2'),
-                    ];
-                }
-            ]
-        ];
-    }
 }
