@@ -98,6 +98,10 @@ class JsonApiResource extends JsonResource
             $resource = $this->resource;
         } elseif ($this->resource instanceof ConvertibleInterface) {
             $resource = $this->resource->convertToJsonApiResource();
+        } elseif ($this instanceof ResourceableInterface) {
+            $resource = $this;
+        } elseif ($this instanceof ConvertibleInterface) {
+            $resource = $this->convertToJsonApiResource();
         } else {
             throw new InvalidArgumentException("Provided resource must be one of " . ResourceableInterface::class . ' or ' . ConvertibleInterface::class);
         }
