@@ -1,5 +1,5 @@
 {
-    "name": "garbetjie/laravel-jsonapi-resources",
+    "name": "garbetjie/laravel-jsonapi",
     "description": "Easily generate JSON:API response structures using Laravel's Resources.",
     "type": "library",
     "license": "MIT",
