@@ -58,7 +58,7 @@ class JsonApiResource extends JsonResource
      *
      * @return void
      */
-    protected function setDefaultCollectionExtractors()
+    protected function setDefaultCollectionExtractors(): void
     {
         $this->collectionExtractors[Paginator::class] = function (Paginator $paginator) {
             return $paginator->items();
@@ -80,7 +80,7 @@ class JsonApiResource extends JsonResource
      *
      * @return array
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         // We're building a collection
         if ($builder = $this->getCollectionExtractor()) {
@@ -131,9 +131,10 @@ class JsonApiResource extends JsonResource
      *
      * @param string $className
      * @param Closure $builder
+     *
      * @return static
      */
-    protected function withCollectionExtractor($className, Closure $builder)
+    public function withCollectionExtractor($className, Closure $builder)
     {
         $this->collectionExtractors[$className] = $builder;
 
@@ -146,7 +147,7 @@ class JsonApiResource extends JsonResource
      *
      * @return string|null
      */
-    private function getCollectionExtractor()
+    protected function getCollectionExtractor(): ?string
     {
         // Short-circuit to returning true if it is a numerically-indexed PHP array.
         if (is_array($this->resource) && array_keys($this->resource) === range(0, count($this->resource) - 1)) {
@@ -177,9 +178,10 @@ class JsonApiResource extends JsonResource
      * Adds in the `included` property.
      *
      * @param Request $request
+     *
      * @return array
      */
-    public function with($request)
+    public function with($request): array
     {
         $included = $this->removeMissingValues(['included' => $this->buildJsonApiIncludes($request)]);
 
@@ -242,6 +244,7 @@ class JsonApiResource extends JsonResource
      * specified.
      *
      * @param Request $request
+     *
      * @return array|MissingValue
      */
     protected function buildJsonApiIncludes($request)
