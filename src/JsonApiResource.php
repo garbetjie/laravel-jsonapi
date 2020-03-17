@@ -5,19 +5,15 @@ namespace Garbetjie\Laravel\JsonApi;
 use Closure;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\MissingValue;
 use Illuminate\Support\Enumerable;
 use InvalidArgumentException;
-use phpDocumentor\Reflection\Types\Collection;
-use RuntimeException;
 use stdClass;
 use function array_keys;
 use function call_user_func;
 use function collect;
 use function count;
-use function get_class;
 use function is_array;
 use function range;
 
@@ -87,21 +83,20 @@ class JsonApiResource extends JsonResource
             return collect($this->collectionExtractors[$builder]($this->resource))
                 ->map(
                     function ($resource) use ($request) {
-                        return (new JsonApiResource($resource))->toArray($request);
+                        return (new static($resource))->toArray($request);
                     }
                 )
                 ->toArray();
         }
 
-        // Ensure we have an instance of the ResourceableInterface, so that we can create the resource.
-        if ($this->resource instanceof ResourceableInterface) {
-            $resource = $this->resource;
-        } elseif ($this->resource instanceof ConvertibleInterface) {
-            $resource = $this->resource->convertToJsonApiResource();
-        } elseif ($this instanceof ResourceableInterface) {
+        if ($this instanceof ResourceableInterface) {
             $resource = $this;
         } elseif ($this instanceof ConvertibleInterface) {
             $resource = $this->convertToJsonApiResource();
+        } elseif ($this->resource instanceof ResourceableInterface) {
+            $resource = $this->resource;
+        } elseif ($this->resource instanceof ConvertibleInterface) {
+            $resource = $this->resource->convertToJsonApiResource();
         } else {
             throw new InvalidArgumentException("Provided resource must be one of " . ResourceableInterface::class . ' or ' . ConvertibleInterface::class);
         }
