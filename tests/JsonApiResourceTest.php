@@ -3,6 +3,7 @@
 
 namespace Garbetjie\Laravel\JsonApi\Tests;
 
+use Closure;
 use Garbetjie\Laravel\JsonApi\Extractors\PassthroughExtractor;
 use Garbetjie\Laravel\JsonApi\JsonApiResource;
 use Illuminate\Container\Container;
@@ -11,6 +12,7 @@ use Illuminate\Http\Resources\Json\ResourceResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use ReflectionObject;
@@ -21,6 +23,7 @@ use function collect;
 use function json_decode;
 use function json_encode;
 use function range;
+use function value;
 
 class JsonApiResourceTest extends TestCase
 {
@@ -185,8 +188,9 @@ class JsonApiResourceTest extends TestCase
      * @param string|null $includes
      * @param MockResource|MockResource[]|Collection $included
      * @param int $expectedIncludeCount
+     * @param array $defaultIncludes
      */
-    public function testIncludedResources($resourceOrCollection, $includes, $included, $expectedIncludeCount)
+    public function testIncludedResources($resourceOrCollection, $includes, $included, $expectedIncludeCount, $defaultIncludes)
     {
         $request = app(Request::class);
         /* @var Request $request */
@@ -196,6 +200,8 @@ class JsonApiResourceTest extends TestCase
         }
 
         $resource = new JsonApiResource($resourceOrCollection);
+
+        $resource->withDefaultIncludes($defaultIncludes);
 
         $resource->withIncludeLoader(
             'one',
@@ -237,7 +243,8 @@ class JsonApiResourceTest extends TestCase
                 (new MockResource('type', 'id')),
                 'one',
                 [new MockResource('included_type1', 'included_id1'), new MockResource('included_type2', 'included_id2')],
-                2
+                2,
+                ['one'],
             ],
             'multiple resources with duplicated includes' => [
                 [(new MockResource('type1', 'id1')), new MockResource('type2', 'id2')],
@@ -247,13 +254,91 @@ class JsonApiResourceTest extends TestCase
                     new MockResource('included_type2', 'included_id2'),
                     new MockResource('included_type1', 'included_id1'),
                 ],
-                2
+                2,
+                ['one'],
             ],
             'unregistered include' => [
                 new MockResource('type', 'id'),
                 'not_found',
                 [new MockResource('included_type1', 'included_id1')],
-                0
+                0,
+                ['one'],
+            ],
+            'default includes' => [
+                new MockResource('type', 'id'),
+                null,
+                [new MockResource('included_type1', 'included_id1')],
+                1,
+                ['one'],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider notImplementingInterfaceProvider
+     *
+     * @param mixed $value
+     */
+    public function testForNotImplementingInterface($value)
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $resource = new JsonApiResource($value);
+        $request = app(Request::class);
+
+        $resource->toArray($request);
+    }
+
+    public function notImplementingInterfaceProvider()
+    {
+        return [
+            ['string'],
+            [1],
+            [null],
+            [new stdClass()],
+            ['associative' => 'array']
+        ];
+    }
+
+    /**
+     * @dataProvider customCollectionExtractorsProvider
+     *
+     * @param string $className
+     * @param Closure $fn
+     * @param mixed $value
+     */
+    public function testCustomCollectionExtractors($className, $fn, $value)
+    {
+        $resource = new JsonApiResource($value);
+        $resource->withCollectionExtractor($className, $fn);
+        $built = $resource->toArray(app(Request::class));
+
+        $this->assertIsArray($built);
+        $this->assertEquals(array_keys($built), range(0, count($built) - 1));
+    }
+
+    public function customCollectionExtractorsProvider()
+    {
+        return [
+            [
+                stdClass::class,
+                function (stdClass $obj) {
+                    return [new MockResource('type', 'id')];
+                },
+                new stdClass(),
+            ],
+
+            [
+                Closure::class,
+                function (Closure $fn) {
+                    return $fn();
+                },
+                function () {
+                    return [
+                        new MockResource('type1', 'id1'),
+                        new MockResource('type2', 'id2'),
+                    ];
+                }
             ]
         ];
     }
