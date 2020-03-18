@@ -49,8 +49,12 @@ class JsonApiResource extends JsonResource
             'relationships' => $resource->getJsonApiRelationships($request)
         ]);
 
-        // Convert any empty arrays to objects.
+        // Run through all the additional attributes, and remove any missing values from each. If we're left with an
+        // empty array, then convert it to an object.
         foreach ($additional as $key => $value) {
+            $value = $this->removeMissingValues($value);
+            $additional[$key] = $value;
+
             if (is_array($value) && count($value) < 1) {
                 $additional[$key] = new stdClass();
             }
