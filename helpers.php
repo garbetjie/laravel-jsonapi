@@ -2,15 +2,13 @@
 
 namespace Garbetjie\Laravel\JsonApi;
 
+use Garbetjie\Laravel\JsonApi\Helpers\Helper;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Enumerable;
-use function array_filter;
-use function array_map;
-use function array_unique;
-use function array_values;
+use function app;
 use function collect;
 use function explode;
 use function is_array;
@@ -55,4 +53,11 @@ function to_collection($item) {
     } else {
         return collect([$item]);
     }
+}
+
+/**
+ * @return Helper
+ */
+function jsonapi() {
+    return app(Helper::class);
 }
