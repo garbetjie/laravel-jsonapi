@@ -6,19 +6,24 @@ namespace Garbetjie\Laravel\JsonApi\Tests;
 use Closure;
 use Garbetjie\Laravel\JsonApi\Extractors\PassthroughExtractor;
 use Garbetjie\Laravel\JsonApi\JsonApiResource;
+use Garbetjie\Laravel\JsonApi\JsonApiResourceCollection;
+use Garbetjie\Laravel\JsonApi\ResourceableInterface;
 use Illuminate\Container\Container;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceResponse;
+use Illuminate\Http\Resources\MissingValue;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use JsonSchema\Validator;
+use JsonSerializable;
 use PHPUnit\Framework\TestCase;
 use ReflectionObject;
 use stdClass;
 use function app;
 use function array_keys;
+use function array_unshift;
 use function collect;
 use function json_decode;
 use function json_encode;
@@ -40,7 +45,298 @@ class JsonApiResourceTest extends TestCase
     }
 
     /**
-     * @param JsonApiResource $resource
+     * @dataProvider providesPropertyIsObject
+     * @param string $method
+     * @param string $property
+     * @param mixed $value
+     */
+    public function testPropertyIsObject($method, $property, $value)
+    {
+        $stub = $this->createStub(ResourceableInterface::class);
+        $stub->method($method)->willReturn($value);
+
+        $resource = new JsonApiResource($stub);
+        $built = $resource->toArray(app(Request::class));
+
+        $this->assertIsArray($built);
+        $this->assertArrayHasKey($property, $built);
+        $this->assertEquals(new stdClass(), $built[$property]);
+    }
+
+    public function providesPropertyIsObject()
+    {
+        $data = [];
+
+        foreach ([
+                     'getJsonApiAttributes' => 'attributes',
+                     'getJsonApiMeta' => 'meta',
+                     'getJsonApiLinks' => 'links',
+                     'getJsonApiRelationships' => 'relationships',
+                 ] as $method => $property
+        ) {
+            $data["empty array [{$property}]"] = [$method, $property, []];
+            $data["array with single missing value [{$property}]"] = [$method, $property, ['name' => new MissingValue()]];
+            $data["array with multiple missing values [{$property}]"] = [$method, $property, ['name' => new MissingValue(), 'description' => new MissingValue()]];
+        }
+
+        return $data;
+    }
+
+    /**
+     * @dataProvider providesPropertyIsArray
+     * @param string $method
+     * @param string $property
+     * @param array $value
+     */
+    public function testPropertyIsArray($method, $property, $value)
+    {
+        $stub = $this->createStub(ResourceableInterface::class);
+        $stub->method($method)->willReturn($value);
+
+        $resource = new JsonApiResource($stub);
+        $built = $resource->toArray(app(Request::class));
+
+        $this->assertIsArray($built);
+        $this->assertArrayHasKey($property, $built);
+        $this->assertIsArray($built[$property]);
+    }
+
+    public function providesPropertyIsArray()
+    {
+        $data = [];
+
+        foreach ([
+                     'getJsonApiAttributes' => 'attributes',
+                     'getJsonApiMeta' => 'meta',
+                     'getJsonApiLinks' => 'links',
+                     'getJsonApiRelationships' => 'relationships',
+                 ] as $method => $property
+        ) {
+            $data["array with single null [{$property}]"] = [
+                $method,
+                $property,
+                ['name' => null],
+            ];
+
+            $data["array with string value [{$property}]"] = [
+                $method,
+                $property,
+                ['name' => ''],
+            ];
+
+            $data["array with int value [{$property}]"] = [
+                $method,
+                $property,
+                ['name' => 123],
+            ];
+
+            $data["array with nested array [{$property}]"] = [
+                $method,
+                $property,
+                ['images' => ['url' => 'https://example.org']]
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
+     * @dataProvider providesPropertyIsReturnedAsGiven
+     * @param string $method
+     * @param string $property
+     * @param mixed $value
+     */
+    public function testPropertyIsReturnedAsGiven($method, $property, $value)
+    {
+        $stub = $this->createStub(ResourceableInterface::class);
+        $stub->method($method)->willReturn($value);
+
+        $resource = new JsonApiResource($stub);
+        $built = $resource->toArray(app(Request::class));
+
+        $this->assertIsArray($built);
+        $this->assertArrayHasKey($property, $built);
+        $this->assertEquals($value, $built[$property]);
+    }
+
+    public function providesPropertyIsReturnedAsGiven()
+    {
+        $data = [];
+
+        foreach ([
+                     'getJsonApiAttributes' => 'attributes',
+                     'getJsonApiMeta' => 'meta',
+                     'getJsonApiLinks' => 'links',
+                     'getJsonApiRelationships' => 'relationships',
+                 ] as $method => $property
+        ) {
+            $data["null [{$property}]"] = [$method, $property, null];
+            $data["string [{$property}]"] = [$method, $property, 'a string'];
+            $data["int [{$property}]"] = [$method, $property, 123];
+            $data["object instance [{$property}]"] = [$method, $property, new class() {}];
+        }
+
+        return $data;
+    }
+
+    /**
+     * @dataProvider providesEncodedStructureValidates
+     * @param ResourceableInterface $stub
+     */
+    public function testEncodedStructureValidates(ResourceableInterface $stub)
+    {
+        $resource = new JsonApiResource($stub);
+        $converted = $this->convertResourceToResponse($resource, app(Request::class));
+
+        $validator = new Validator();
+        $validator->validate($converted, ['$ref' => 'file://' . __DIR__ . '/jsonapi.schema.json']);
+
+        $this->assertTrue($validator->isValid());
+    }
+
+    public function providesEncodedStructureValidates()
+    {
+        return [
+            'type and id only' => [
+                $this->createResourceableInterfaceStub(),
+            ],
+            'with attributes only' => [
+                $this->createResourceableInterfaceStub(['name' => ''])
+            ],
+            'with links only' => [
+                $this->createResourceableInterfaceStub(MissingValue::class, [
+                    'myLink' => 'https://example.org',
+                    'myLinkWithHrefOnly' => [
+                        'href' => 'https://example.org',
+                    ],
+                    'myCompleteLink' => [
+                        'href' => 'https://example.org',
+                        'meta' => [
+                            'count' => 10,
+                        ]
+                    ]
+                ])
+            ],
+            'with meta only' => [
+                $this->createResourceableInterfaceStub(MissingValue::class, MissingValue::class, [
+                    'count' => 1538282
+                ]),
+            ],
+            'relationships with link only' => [
+                $this->createResourceableInterfaceStub(
+                    MissingValue::class,
+                    MissingValue::class,
+                    MissingValue::class,
+                    ['myRelationshipWithoutData' => [
+                        'links' => [
+                            'related' => 'https://example.org',
+                        ]
+                    ]]
+                ),
+            ],
+            'relationships with hasMany data' => [
+                $this->createResourceableInterfaceStub(
+                    MissingValue::class,
+                    MissingValue::class,
+                    MissingValue::class,
+                    ['myRelationshipWithHasManyData' => [
+                        'data' => [
+                            ['type' => 'resource1', 'id' => 'id'],
+                            ['type' => 'resource2', 'id' => 'id'],
+                        ],
+                        'links' => [
+                            'related' => 'https://example.org',
+                        ],
+                    ]]
+                ),
+            ],
+            'relationships with hasOne data' => [
+                $this->createResourceableInterfaceStub(
+                    MissingValue::class,
+                    MissingValue::class,
+                    MissingValue::class,
+                    ['myRelationshipWithHasOneData' => [
+                        'data' => ['type' => 'resource', 'id' => 'id'],
+                        'links' => [
+                            'related' => 'https://example.org',
+                        ],
+                    ]]
+                ),
+            ],
+            'relationships with data only' => [
+                $this->createResourceableInterfaceStub(
+                    MissingValue::class,
+                    MissingValue::class,
+                    MissingValue::class,
+                    ['myRelationshipWithDataOnly' => [
+                        'data' => [
+                            'type' => 'resource',
+                            'id' => 'id',
+                        ],
+                    ]]
+                )
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider providesEncodedStructureValidatesWithMultiple
+     * @param $stubs
+     */
+    public function testEncodedStructureValidatesWithMultiple($stubs)
+    {
+        $resource = JsonApiResource::collection($stubs);
+        $converted = $this->convertResourceToResponse($resource, app(Request::class));
+
+        $validator = new Validator();
+        $validator->validate($converted, ['$ref' => 'file://' . __DIR__ . '/jsonapi.schema.json']);
+
+        $this->assertTrue($validator->isValid());
+        $this->assertObjectHasAttribute('data', $converted);
+        $this->assertCount(1, $converted->data);
+    }
+
+    public function providesEncodedStructureValidatesWithMultiple()
+    {
+        $data = [];
+
+        foreach ($this->providesEncodedStructureValidates() as $name => $params) {
+            $data["{$name} [array]"] = [[$params[0]]];
+            $data["{$name} [collection]"] = [collect([$params[0]])];
+            $data["{$name} [length-aware paginator]"] = [new LengthAwarePaginator([$params[0]], 1, 1, 1)];
+            $data["{$name} [paginator]"] = [new Paginator([$params[0]], 1, 1)];
+        }
+
+        return $data;
+    }
+
+    /**
+     * @dataProvider providesExceptionThrownForNonConverteableInterfaces
+     * @param $value
+     */
+    public function testExceptionThrownForNonConverteableInterfaces($value)
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $resource = new JsonApiResource($value);
+        $request = app(Request::class);
+
+        $resource->toArray($request);
+    }
+
+    public function providesExceptionThrownForNonConverteableInterfaces()
+    {
+        return [
+            ['string'],
+            [1],
+            [null],
+            [new stdClass()],
+            ['associative' => 'array']
+        ];
+    }
+
+    /**
+     * @param JsonApiResource|JsonApiResourceCollection $resource
      * @param Request $request
      * @return stdClass
      */
@@ -64,239 +360,20 @@ class JsonApiResourceTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider singleResourceProvider
-     *
-     * @param MockResource $resource
-     */
-    public function testSingleResourceStructure($resource)
-    {
-        $request = app(Request::class);
-        $resource = new JsonApiResource($resource);
-        $body = $this->convertResourceToResponse($resource, $request);
+    private function createResourceableInterfaceStub(
+        $attributes = MissingValue::class,
+        $links = MissingValue::class,
+        $meta = MissingValue::class,
+        $relationships = MissingValue::class
+    ) {
+        $stub = $this->createStub(ResourceableInterface::class);
+        $stub->method('getJsonApiType')->willReturn('resource');
+        $stub->method('getJsonApiId')->willReturn('id');
+        $stub->method('getJsonApiAttributes')->willReturn($attributes === MissingValue::class ? new MissingValue() : $attributes);
+        $stub->method('getJsonApiLinks')->willReturn($links === MissingValue::class ? new MissingValue() : $links);
+        $stub->method('getJsonApiMeta')->willReturn($meta === MissingValue::class ? new MissingValue() : $meta);
+        $stub->method('getJsonApiRelationships')->willReturn($relationships === MissingValue::class ? new MissingValue() : $relationships);
 
-        $validator = new Validator();
-        $validator->validate($body, ['$ref' => 'file://' . __DIR__ . '/jsonapi.schema.json']);
-
-        $this->assertTrue($validator->isValid(), 'json schema validation');
-    }
-
-    public function singleResourceProvider()
-    {
-        return [
-            'relationship object' => [
-                new MockResource('type', 'id')
-            ],
-            'attributes' => [
-                (new MockResource('type', 'id'))->attributes(['name' => 'Resource name'])
-            ],
-            'attributes + links' => [
-                (new MockResource('type', 'id'))
-                    ->attributes(['name' => 'Resource name'])
-                    ->links(['link' => 'https://example.org']),
-            ],
-            'attributes + links + meta' => [
-                (new MockResource('type', 'id'))
-                    ->attributes(['name' => 'Resource name'])
-                    ->links(['link' => 'https://example.org'])
-                    ->meta(['someCount' => 12345]),
-            ],
-            'attributes + links + meta + hasOne relationship' => [
-                (new MockResource('type', 'id'))
-                    ->attributes(['name' => 'Resource name'])
-                    ->links(['link' => 'https://example.org'])
-                    ->meta(['someCount' => 12345])
-                    ->relationships([
-                        'relationshipName' => [
-                            'data' => ['type' => 'type', 'id' => 'id'],
-                            'links' => [
-                                'related' => 'https://example.org',
-                            ]
-                        ]
-                    ]),
-            ],
-            'attributes + links + meta + hasMany relationship' => [
-                (new MockResource('type', 'id'))
-                    ->attributes(['name' => 'Resource name'])
-                    ->links(['link' => 'https://example.org'])
-                    ->meta(['someCount' => 12345])
-                    ->relationships([
-                        'relationshipName' => [
-                            'data' => [
-                                ['type' => 'type', 'id' => 'id'],
-                            ],
-                            'links' => [
-                                'related' => 'https://example.org',
-                            ],
-                        ]
-                    ]),
-            ]
-        ];
-    }
-
-    /**
-     * @dataProvider multipleResourceProvider
-     * @param array|Collection $collection
-     * @param MockResource $expectedResource
-     */
-    public function testCollectionOfResourcesStructure($collection, $expectedResource)
-    {
-        $request = app(Request::class);
-        $resource = new JsonApiResource($collection);
-        $body = $this->convertResourceToResponse($resource, $request);
-
-        $validator = new Validator();
-        $validator->validate($body, ['$ref' => 'file://' . __DIR__ . '/jsonapi.schema.json']);
-
-        $this->assertTrue($validator->isValid());
-        $this->assertObjectHasAttribute('data', $body);
-
-        $data = $body->data;
-        $this->assertIsArray($data);
-        $this->assertCount(1, $data);
-        $this->assertEquals((object)['type' => $expectedResource->getJsonApiType(), 'id' => $expectedResource->getJsonApiId()], $data[0]);
-    }
-
-    public function multipleResourceProvider()
-    {
-        $resource = new MockResource('type', 'id');
-
-        return [
-            'relationship object (array)' => [
-                [$resource],
-                $resource,
-            ],
-            'relationship object (collection)' => [
-                collect([$resource]),
-                $resource,
-            ],
-            'relationship object (paginated)' => [
-                new Paginator([$resource], 15, 1),
-                $resource,
-            ],
-            'relationship object (length aware paginated)' => [
-                new LengthAwarePaginator([$resource], 15, 15, 1),
-                $resource,
-            ]
-        ];
-    }
-
-    /**
-     * @dataProvider includedResourceProvider
-     *
-     * @param MockResource|MockResource[]|Collection $resourceOrCollection
-     * @param string|null $includes
-     * @param MockResource|MockResource[]|Collection $included
-     * @param int $expectedIncludeCount
-     * @param array $defaultIncludes
-     */
-    public function testIncludedResources($resourceOrCollection, $includes, $included, $expectedIncludeCount, $defaultIncludes)
-    {
-        $request = app(Request::class);
-        /* @var Request $request */
-
-        if ($includes !== null) {
-            $request->query->set('include', $includes);
-        }
-
-        $resource = new JsonApiResource($resourceOrCollection);
-
-        $resource->withDefaultIncludes($defaultIncludes);
-
-        $resource->withIncludeLoader(
-            'one',
-            function ($providedResource) use ($resourceOrCollection) {
-                /* @var MockResource|MockResource[]|Collection $resourceOrCollection */
-
-                // Ensure that the include loader is passed the actual resource that was passed into the resource initially.
-                $this->assertSame($resourceOrCollection, $providedResource);
-            }
-        );
-
-        $resource->withIncludeExtractor(
-            'one',
-            new PassthroughExtractor($included)
-        );
-
-        $body = $this->convertResourceToResponse($resource, $request);
-
-        $validator = new Validator();
-        $validator->validate($body, ['$ref' => 'file://' . __DIR__ . '/jsonapi.schema.json']);
-
-        $this->assertTrue($validator->isValid());
-        $this->assertObjectHasAttribute('included', $body);
-
-        $this->assertEquals(
-            array_keys($body->included),
-            count($body->included) > 0
-                ? range(0, count($body->included) - 1)
-                : []
-        );
-
-        $this->assertCount($expectedIncludeCount, $body->included);
-    }
-
-    public function includedResourceProvider()
-    {
-        return [
-            'single resource' => [
-                (new MockResource('type', 'id')),
-                'one',
-                [new MockResource('included_type1', 'included_id1'), new MockResource('included_type2', 'included_id2')],
-                2,
-                ['one'],
-            ],
-            'multiple resources with duplicated includes' => [
-                [(new MockResource('type1', 'id1')), new MockResource('type2', 'id2')],
-                'one',
-                [
-                    new MockResource('included_type1', 'included_id1'),
-                    new MockResource('included_type2', 'included_id2'),
-                    new MockResource('included_type1', 'included_id1'),
-                ],
-                2,
-                ['one'],
-            ],
-            'unregistered include' => [
-                new MockResource('type', 'id'),
-                'not_found',
-                [new MockResource('included_type1', 'included_id1')],
-                0,
-                ['one'],
-            ],
-            'default includes' => [
-                new MockResource('type', 'id'),
-                null,
-                [new MockResource('included_type1', 'included_id1')],
-                1,
-                ['one'],
-            ],
-        ];
-    }
-
-    /**
-     * @dataProvider notImplementingInterfaceProvider
-     *
-     * @param mixed $value
-     */
-    public function testForNotImplementingInterface($value)
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        $resource = new JsonApiResource($value);
-        $request = app(Request::class);
-
-        $resource->toArray($request);
-    }
-
-    public function notImplementingInterfaceProvider()
-    {
-        return [
-            ['string'],
-            [1],
-            [null],
-            [new stdClass()],
-            ['associative' => 'array']
-        ];
+        return $stub;
     }
 }

@@ -12,6 +12,7 @@ use function call_user_func;
 use function collect;
 use function count;
 use function is_array;
+use function is_iterable;
 
 class JsonApiResource extends JsonResource
 {
@@ -52,7 +53,10 @@ class JsonApiResource extends JsonResource
         // Run through all the additional attributes, and remove any missing values from each. If we're left with an
         // empty array, then convert it to an object.
         foreach ($additional as $key => $value) {
-            $value = $this->removeMissingValues($value);
+            if (is_iterable($value)) {
+                $value = $this->removeMissingValues($value);
+            }
+
             $additional[$key] = $value;
 
             if (is_array($value) && count($value) < 1) {
