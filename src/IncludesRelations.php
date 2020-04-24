@@ -9,7 +9,7 @@ use function call_user_func;
 use function collect;
 use function count;
 
-trait Includeable
+trait IncludesRelations
 {
     /**
      * @var string[]

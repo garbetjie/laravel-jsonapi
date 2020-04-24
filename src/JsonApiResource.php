@@ -2,21 +2,17 @@
 
 namespace Garbetjie\Laravel\JsonApi;
 
-use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Http\Resources\MissingValue;
 use InvalidArgumentException;
 use stdClass;
-use function call_user_func;
-use function collect;
 use function count;
 use function is_array;
 use function is_iterable;
 
 class JsonApiResource extends JsonResource
 {
-    use Includeable;
+    use IncludesRelations;
 
     /**
      * Converts the resource to an array that can be sent to the browser.

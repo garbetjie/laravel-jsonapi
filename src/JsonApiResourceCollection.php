@@ -7,7 +7,7 @@ use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class JsonApiResourceCollection extends ResourceCollection
 {
-    use Includeable;
+    use IncludesRelations;
 
     /**
      * ResourceCollection constructor.
