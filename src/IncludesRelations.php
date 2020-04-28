@@ -3,10 +3,13 @@
 namespace Garbetjie\Laravel\JsonApi;
 
 use Closure;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\MissingValue;
+use InvalidArgumentException;
 use function call_user_func;
 use function collect;
+use function config;
 use function count;
 
 trait IncludesRelations
@@ -103,6 +106,7 @@ trait IncludesRelations
         }
 
         $all = collect([]);
+        $includeMode = strtolower(config('garbetjie-jsonapi.include_mode'));
 
         // Call the extractors.
         foreach ($includes as $include) {
@@ -114,8 +118,33 @@ trait IncludesRelations
 
         return $all
             ->filter(
-                function ($item) {
-                    return $item && ($item instanceof JsonApiResourceInterface || $item instanceof ConvertibleToJsonApiResourceInterface);
+                function ($item) use ($includeMode) {
+                    // Null value given, so just silently filter.
+                    if (!$item) {
+                        return false;
+                    }
+
+                    // The resource given is one of the expected interfaces, so return true.
+                    if ($item instanceof JsonApiResourceInterface || $item instanceof ConvertibleToJsonApiResourceInterface) {
+                        return true;
+                    }
+
+                    // If we're here, then it means an invalid resource was provided. We'll need to handle it depending
+                    // on the include mode configured.
+
+                    // Strict mode -> throw an exception.
+                    if ($includeMode === 'strict') {
+                        throw new InvalidArgumentException(
+                            sprintf(
+                                "Encountered included resource that doesn't implement %s or %s",
+                                JsonApiResourceInterface::class,
+                                ConvertibleToJsonApiResourceInterface::class,
+                            )
+                        );
+                    }
+
+                    // Fall back to filter mode -> silently filter out the included resource.
+                    return false;
                 }
             )
             ->map(

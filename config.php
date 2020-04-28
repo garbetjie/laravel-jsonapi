@@ -1,17 +1,26 @@
 <?php
 
 return [
-    'defaults' => [
+    'paging' => [
         'limit' => [
             'key' => 'limit',
-            'value' => 50,
+            'default' => 50,
+            'max' => 50,
+            'min' => 1,
         ],
-        'page' => [
-            'key' => 'index',
-            'value' => 1,
+
+        'strategies' => [
+            'page' => [
+                'key' => 'index',
+                'default' => 1,
+            ],
+
+            'cursor' => [
+                'key' => 'cursor',
+                'default' => null,
+            ],
         ],
-        'cursor' => [
-            'key' => 'cursor',
-        ],
-    ]
+    ],
+
+    'include_mode' => 'filter', // strict
 ];

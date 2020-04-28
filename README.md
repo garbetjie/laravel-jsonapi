@@ -135,6 +135,10 @@ class User extends Model implements ConvertibleToJsonApiResourceInterface
 
 ## Changelog
 
+* **0.6.0**
+    * Refactor pagination config to use strategies.
+    * Add `include_mode` configuration, which determines how invalid includes are handled.
+
 * **0.5.0**
     * Renamed multiple classes and interfaces to provide better readability.
     * Update README to provide more usage information.
