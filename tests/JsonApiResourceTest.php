@@ -4,10 +4,10 @@
 namespace Garbetjie\Laravel\JsonApi\Tests;
 
 use Closure;
-use Garbetjie\Laravel\JsonApi\Extractors\PassthroughExtractor;
+use Garbetjie\Laravel\JsonApi\Extractors\PassthroughIncludeExtractor;
 use Garbetjie\Laravel\JsonApi\JsonApiResource;
 use Garbetjie\Laravel\JsonApi\JsonApiResourceCollection;
-use Garbetjie\Laravel\JsonApi\ResourceableInterface;
+use Garbetjie\Laravel\JsonApi\JsonApiResourceInterface;
 use Illuminate\Container\Container;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceResponse;
@@ -52,7 +52,7 @@ class JsonApiResourceTest extends TestCase
      */
     public function testPropertyIsObject($method, $property, $value)
     {
-        $stub = $this->createStub(ResourceableInterface::class);
+        $stub = $this->createStub(JsonApiResourceInterface::class);
         $stub->method($method)->willReturn($value);
 
         $resource = new JsonApiResource($stub);
@@ -90,7 +90,7 @@ class JsonApiResourceTest extends TestCase
      */
     public function testPropertyIsArray($method, $property, $value)
     {
-        $stub = $this->createStub(ResourceableInterface::class);
+        $stub = $this->createStub(JsonApiResourceInterface::class);
         $stub->method($method)->willReturn($value);
 
         $resource = new JsonApiResource($stub);
@@ -148,7 +148,7 @@ class JsonApiResourceTest extends TestCase
      */
     public function testPropertyIsReturnedAsGiven($method, $property, $value)
     {
-        $stub = $this->createStub(ResourceableInterface::class);
+        $stub = $this->createStub(JsonApiResourceInterface::class);
         $stub->method($method)->willReturn($value);
 
         $resource = new JsonApiResource($stub);
@@ -181,9 +181,9 @@ class JsonApiResourceTest extends TestCase
 
     /**
      * @dataProvider providesEncodedStructureValidates
-     * @param ResourceableInterface $stub
+     * @param JsonApiResourceInterface $stub
      */
-    public function testEncodedStructureValidates(ResourceableInterface $stub)
+    public function testEncodedStructureValidates(JsonApiResourceInterface $stub)
     {
         $resource = new JsonApiResource($stub);
         $converted = $this->convertResourceToResponse($resource, app(Request::class));
@@ -366,7 +366,7 @@ class JsonApiResourceTest extends TestCase
         $meta = MissingValue::class,
         $relationships = MissingValue::class
     ) {
-        $stub = $this->createStub(ResourceableInterface::class);
+        $stub = $this->createStub(JsonApiResourceInterface::class);
         $stub->method('getJsonApiType')->willReturn('resource');
         $stub->method('getJsonApiId')->willReturn('id');
         $stub->method('getJsonApiAttributes')->willReturn($attributes === MissingValue::class ? new MissingValue() : $attributes);

@@ -3,10 +3,10 @@
 namespace Garbetjie\Laravel\JsonApi\Tests\Extractors;
 
 use Error;
-use Garbetjie\Laravel\JsonApi\Extractors\ClosureExtractor;
-use Garbetjie\Laravel\JsonApi\Extractors\MultiExtractor;
-use Garbetjie\Laravel\JsonApi\Extractors\PassthroughExtractor;
-use Garbetjie\Laravel\JsonApi\Extractors\PluckExtractor;
+use Garbetjie\Laravel\JsonApi\Extractors\ClosureIncludeExtractor;
+use Garbetjie\Laravel\JsonApi\Extractors\CombinationIncludeExtractor;
+use Garbetjie\Laravel\JsonApi\Extractors\PassthroughIncludeExtractor;
+use Garbetjie\Laravel\JsonApi\Extractors\PluckIncludeExtractor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
@@ -24,15 +24,15 @@ class MultiExtractorTest extends TestCase
         $root->setRelation('one', $one);
         $one->setRelation('two', $two);
 
-        $extractor = new MultiExtractor([
-            new PluckExtractor('one'),
-            new PluckExtractor('one.two'),
-            new ClosureExtractor(
+        $extractor = new CombinationIncludeExtractor([
+            new PluckIncludeExtractor('one'),
+            new PluckIncludeExtractor('one.two'),
+            new ClosureIncludeExtractor(
                 function (Model $resource) {
                     return collect([$resource->one->two]);
                 }
             ),
-            new PassthroughExtractor($three)
+            new PassthroughIncludeExtractor($three)
         ]);
 
 
@@ -47,6 +47,6 @@ class MultiExtractorTest extends TestCase
     {
         $this->expectException(Error::class);
 
-        new MultiExtractor(new PluckExtractor('one'));
+        new CombinationIncludeExtractor(new PluckIncludeExtractor('one'));
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Garbetjie\Laravel\JsonApi\Extractors;
 
-use Garbetjie\Laravel\JsonApi\ExtractorInterface;
+use Garbetjie\Laravel\JsonApi\IncludeExtractorInterface;
 use Illuminate\Support\Collection;
 use function Garbetjie\Laravel\JsonApi\to_collection;
 
@@ -11,7 +11,7 @@ use function Garbetjie\Laravel\JsonApi\to_collection;
  *
  * Used when you already have an instance or a collection of an item that needs to be added to the list of included items.
  */
-class PassthroughExtractor implements ExtractorInterface
+class PassthroughIncludeExtractor implements IncludeExtractorInterface
 {
     /**
      * @var Collection|mixed

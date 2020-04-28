@@ -22,7 +22,7 @@ trait IncludesRelations
     protected $includeLoaders = [];
 
     /**
-     * @var ExtractorInterface[]
+     * @var IncludeExtractorInterface[]
      */
     protected $includeExtractors = [];
 
@@ -65,11 +65,11 @@ trait IncludesRelations
      * provided in the URL, but it is part of the default includes.
      *
      * @param string $includeName
-     * @param ExtractorInterface $extractor
+     * @param IncludeExtractorInterface $extractor
      *
      * @return static
      */
-    public function withIncludeExtractor(string $includeName, ExtractorInterface $extractor)
+    public function withIncludeExtractor(string $includeName, IncludeExtractorInterface $extractor)
     {
         $this->includeExtractors[$includeName] = $extractor;
 
@@ -115,25 +115,25 @@ trait IncludesRelations
         return $all
             ->filter(
                 function ($item) {
-                    return $item && ($item instanceof ResourceableInterface || $item instanceof ConvertibleInterface);
+                    return $item && ($item instanceof JsonApiResourceInterface || $item instanceof ConvertibleToJsonApiResourceInterface);
                 }
             )
             ->map(
                 function ($item) {
-                    /* @var ResourceableInterface|ConvertibleInterface $item */
+                    /* @var JsonApiResourceInterface|ConvertibleToJsonApiResourceInterface $item */
 
-                    return $item instanceof ConvertibleInterface
+                    return $item instanceof ConvertibleToJsonApiResourceInterface
                         ? $item->convertToJsonApiResource()
                         : $item;
                 }
             )
             ->unique(
-                function (ResourceableInterface $item) {
+                function (JsonApiResourceInterface $item) {
                     return [$item->getJsonApiType(), $item->getJsonApiId()];
                 }
             )
             ->map(
-                function (ResourceableInterface $item) {
+                function (JsonApiResourceInterface $item) {
                     return new JsonApiResource($item);
                 }
             )

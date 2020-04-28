@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
  * An interface defining extractors that are used to extract objects to be included in the `included` resources property.
  *
  */
-interface ExtractorInterface
+interface IncludeExtractorInterface
 {
     /**
      * @param Model|Collection|Paginator|mixed $resource

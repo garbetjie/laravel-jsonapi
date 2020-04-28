@@ -2,28 +2,28 @@
 
 namespace Garbetjie\Laravel\JsonApi\Extractors;
 
-use Garbetjie\Laravel\JsonApi\ExtractorInterface;
+use Garbetjie\Laravel\JsonApi\IncludeExtractorInterface;
 use Illuminate\Support\Collection;
 use function collect;
 use function Garbetjie\Laravel\JsonApi\to_collection;
 use function get_class;
 
 /**
- * An extractor that consists of other extractors.
+ * An extractor that combines other extractors and merges the results of all of them together.
  *
  * Used when you need to combine the output of other extractors (such as the PluckExtractor and the ClosureExtractor)
  * into the same inclusion list.
  *
  */
-class MultiExtractor implements ExtractorInterface
+class CombinationIncludeExtractor implements IncludeExtractorInterface
 {
     /**
-     * @var ExtractorInterface[]
+     * @var IncludeExtractorInterface[]
      */
     private $extractors = [];
 
     /**
-     * @param ExtractorInterface[] $extractors
+     * @param IncludeExtractorInterface[] $extractors
      */
     public function __construct(array $extractors)
     {

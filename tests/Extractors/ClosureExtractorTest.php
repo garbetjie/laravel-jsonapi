@@ -3,8 +3,8 @@
 namespace Garbetjie\Laravel\JsonApi\Tests\Extractors;
 
 use Closure;
-use Garbetjie\Laravel\JsonApi\ExtractorInterface;
-use Garbetjie\Laravel\JsonApi\Extractors\ClosureExtractor;
+use Garbetjie\Laravel\JsonApi\IncludeExtractorInterface;
+use Garbetjie\Laravel\JsonApi\Extractors\ClosureIncludeExtractor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
@@ -25,7 +25,7 @@ class ClosureExtractorTest extends TestCase
     {
         $valueAsCollection = to_collection($value);
         $invocationCount = 0;
-        $extractor = new ClosureExtractor(
+        $extractor = new ClosureIncludeExtractor(
             function($provided) use (&$invocationCount, $value) {
                 $invocationCount++;
                 $this->assertEquals($value, $provided);
@@ -36,7 +36,7 @@ class ClosureExtractorTest extends TestCase
 
         $collection = $extractor($value);
 
-        $this->assertInstanceOf(ExtractorInterface::class, $extractor);
+        $this->assertInstanceOf(IncludeExtractorInterface::class, $extractor);
         $this->assertInstanceOf(Collection::class, $collection);
         $this->assertEquals(1, $invocationCount);
         $this->assertEquals($expectedCount, $collection->count());

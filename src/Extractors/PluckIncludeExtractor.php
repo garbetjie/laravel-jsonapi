@@ -2,7 +2,7 @@
 
 namespace Garbetjie\Laravel\JsonApi\Extractors;
 
-use Garbetjie\Laravel\JsonApi\ExtractorInterface;
+use Garbetjie\Laravel\JsonApi\IncludeExtractorInterface;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -18,7 +18,7 @@ use function is_array;
  * Either an array of pluck paths, or a single string consisting of a pluck path can be given.
  *
  */
-class PluckExtractor implements ExtractorInterface
+class PluckIncludeExtractor implements IncludeExtractorInterface
 {
     /**
      * @var array

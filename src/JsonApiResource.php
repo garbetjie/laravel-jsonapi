@@ -23,16 +23,16 @@ class JsonApiResource extends JsonResource
      */
     public function toArray($request): array
     {
-        if ($this instanceof ResourceableInterface) {
+        if ($this instanceof JsonApiResourceInterface) {
             $resource = $this;
-        } elseif ($this instanceof ConvertibleInterface) {
+        } elseif ($this instanceof ConvertibleToJsonApiResourceInterface) {
             $resource = $this->convertToJsonApiResource();
-        } elseif ($this->resource instanceof ResourceableInterface) {
+        } elseif ($this->resource instanceof JsonApiResourceInterface) {
             $resource = $this->resource;
-        } elseif ($this->resource instanceof ConvertibleInterface) {
+        } elseif ($this->resource instanceof ConvertibleToJsonApiResourceInterface) {
             $resource = $this->resource->convertToJsonApiResource();
         } else {
-            throw new InvalidArgumentException("Provided resource must be one of " . ResourceableInterface::class . ' or ' . ConvertibleInterface::class);
+            throw new InvalidArgumentException("Provided resource must be one of " . JsonApiResourceInterface::class . ' or ' . ConvertibleToJsonApiResourceInterface::class);
         }
 
         $type = $resource->getJsonApiType();

@@ -2,8 +2,8 @@
 
 namespace Garbetjie\Laravel\JsonApi\Tests\Extractors;
 
-use Garbetjie\Laravel\JsonApi\ExtractorInterface;
-use Garbetjie\Laravel\JsonApi\Extractors\PassthroughExtractor;
+use Garbetjie\Laravel\JsonApi\IncludeExtractorInterface;
+use Garbetjie\Laravel\JsonApi\Extractors\PassthroughIncludeExtractor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
@@ -20,11 +20,11 @@ class PassthroughExtractorTest extends TestCase
      */
     public function testSimple($value)
     {
-        $extractor = new PassthroughExtractor($value);
+        $extractor = new PassthroughIncludeExtractor($value);
         $collection = $extractor(mt_rand(0, PHP_INT_MAX));
         $valueAsArray = !is_array($value) ? [$value] : $value;
 
-        $this->assertInstanceOf(ExtractorInterface::class, $extractor);
+        $this->assertInstanceOf(IncludeExtractorInterface::class, $extractor);
         $this->assertInstanceOf(Collection::class, $collection);
         $this->assertEquals(count($valueAsArray), $collection->count());
         $this->assertEquals($valueAsArray, $collection->all());

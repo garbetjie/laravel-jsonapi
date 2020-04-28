@@ -3,7 +3,7 @@
 namespace Garbetjie\Laravel\JsonApi\Extractors;
 
 use Closure;
-use Garbetjie\Laravel\JsonApi\ExtractorInterface;
+use Garbetjie\Laravel\JsonApi\IncludeExtractorInterface;
 use Illuminate\Support\Collection;
 use function Garbetjie\Laravel\JsonApi\to_collection;
 
@@ -14,7 +14,7 @@ use function Garbetjie\Laravel\JsonApi\to_collection;
  * of items to be included.
  *
  */
-class ClosureExtractor implements ExtractorInterface
+class ClosureIncludeExtractor implements IncludeExtractorInterface
 {
     /**
      * @var Closure
