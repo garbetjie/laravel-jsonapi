@@ -3,8 +3,6 @@
 
 namespace Garbetjie\Laravel\JsonApi\Tests;
 
-use Closure;
-use Garbetjie\Laravel\JsonApi\Extractors\PassthroughIncludeExtractor;
 use Garbetjie\Laravel\JsonApi\JsonApiResource;
 use Garbetjie\Laravel\JsonApi\JsonApiResourceCollection;
 use Garbetjie\Laravel\JsonApi\JsonApiResourceInterface;
@@ -14,10 +12,8 @@ use Illuminate\Http\Resources\Json\ResourceResponse;
 use Illuminate\Http\Resources\MissingValue;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use JsonSchema\Validator;
-use JsonSerializable;
 use PHPUnit\Framework\TestCase;
 use ReflectionObject;
 use stdClass;

@@ -138,7 +138,7 @@ trait IncludesRelations
                             sprintf(
                                 "Encountered included resource that doesn't implement %s or %s",
                                 JsonApiResourceInterface::class,
-                                ConvertibleToJsonApiResourceInterface::class,
+                                ConvertibleToJsonApiResourceInterface::class
                             )
                         );
                     }
