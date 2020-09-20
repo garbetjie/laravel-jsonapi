@@ -135,6 +135,9 @@ class User extends Model implements ConvertibleToJsonApiResourceInterface
 
 ## Changelog
 
+* **.0.6.1**
+    * Remove trailing comma after function argument causing errors.
+
 * **0.6.0**
     * Refactor pagination config to use strategies.
     * Add `include_mode` configuration, which determines how invalid includes are handled.
