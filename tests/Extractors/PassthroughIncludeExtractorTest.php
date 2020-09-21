@@ -11,7 +11,7 @@ use function is_array;
 use function mt_rand;
 use const PHP_INT_MAX;
 
-class PassthroughExtractorTest extends TestCase
+class PassthroughIncludeExtractorTest extends TestCase
 {
     /**
      * @dataProvider valueProvider
@@ -24,7 +24,7 @@ class PassthroughExtractorTest extends TestCase
         $collection = $extractor(mt_rand(0, PHP_INT_MAX));
         $valueAsArray = !is_array($value) ? [$value] : $value;
 
-        $this->assertInstanceOf(IncludeExtractorInterface::class, $extractor);
+        $this->assertIsCallable($extractor);
         $this->assertInstanceOf(Collection::class, $collection);
         $this->assertEquals(count($valueAsArray), $collection->count());
         $this->assertEquals($valueAsArray, $collection->all());

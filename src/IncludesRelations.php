@@ -11,6 +11,8 @@ use function call_user_func;
 use function collect;
 use function config;
 use function count;
+use function debug_backtrace;
+use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
 trait IncludesRelations
 {
@@ -50,13 +52,13 @@ trait IncludesRelations
      * provided in the URL, but it is part of the default includes.
      *
      * @param string $include
-     * @param Closure $loader
+     * @param callable $loader
      *
      * @return static
      */
-    public function withIncludeLoader(string $include, Closure $loader)
+    public function withIncludeLoader(string $include, callable $loader)
     {
-        $this->includeLoaders[$include] = $loader;
+        $this->includeLoaders[$include][] = $loader;
 
         return $this;
     }
@@ -68,13 +70,13 @@ trait IncludesRelations
      * provided in the URL, but it is part of the default includes.
      *
      * @param string $includeName
-     * @param IncludeExtractorInterface $extractor
+     * @param callable $extractor
      *
      * @return static
      */
-    public function withIncludeExtractor(string $includeName, IncludeExtractorInterface $extractor)
+    public function withIncludeExtractor(string $includeName, callable $extractor)
     {
-        $this->includeExtractors[$includeName] = $extractor;
+        $this->includeExtractors[$includeName][] = $extractor;
 
         return $this;
     }
@@ -89,7 +91,7 @@ trait IncludesRelations
      *
      * @return array|MissingValue
      */
-    protected function buildJsonApiIncludes($resource, $request)
+    protected function buildJsonApiIncludes($resource, Request $request)
     {
         // Get the includes to use.
         $includes = has_includes($request) ? parse_includes($request) : $this->defaultIncludes;
@@ -100,8 +102,8 @@ trait IncludesRelations
 
         // Call the loaders.
         foreach ($includes as $include) {
-            if (isset($this->includeLoaders[$include])) {
-                call_user_func($this->includeLoaders[$include], $resource);
+            foreach ($this->includeLoaders[$include] ?? [] as $loader) {
+                $loader($resource);
             }
         }
 
@@ -110,9 +112,8 @@ trait IncludesRelations
 
         // Call the extractors.
         foreach ($includes as $include) {
-            if (isset($this->includeExtractors[$include])) {
-                $items = collect($this->includeExtractors[$include]($resource));
-                $all = $all->concat($items);
+            foreach ($this->includeExtractors[$include] ?? [] as $extractor) {
+                $all = $all->concat(to_collection($extractor($resource)));
             }
         }
 

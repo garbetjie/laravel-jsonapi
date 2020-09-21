@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
 use function collect;
 
-class MultiExtractorTest extends TestCase
+class CombinationIncludeExtractorTest extends TestCase
 {
     public function testCombination()
     {
@@ -35,7 +35,7 @@ class MultiExtractorTest extends TestCase
             new PassthroughIncludeExtractor($three)
         ]);
 
-
+        $this->assertIsCallable($extractor);
         $collection = $extractor($root);
 
         $this->assertInstanceOf(Collection::class, $collection);

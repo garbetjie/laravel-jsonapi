@@ -13,7 +13,7 @@ use function Garbetjie\Laravel\JsonApi\to_collection;
 use function is_array;
 use function is_scalar;
 
-class ClosureExtractorTest extends TestCase
+class ClosureIncludeExtractorTest extends TestCase
 {
     /**
      * @dataProvider valueProvider
@@ -21,7 +21,7 @@ class ClosureExtractorTest extends TestCase
      * @param mixed $value
      * @param int $expectedCount
      */
-    public function testClosureCalled($value, $expectedCount)
+    public function testClosureCalled($value, int $expectedCount)
     {
         $valueAsCollection = to_collection($value);
         $invocationCount = 0;
@@ -36,7 +36,7 @@ class ClosureExtractorTest extends TestCase
 
         $collection = $extractor($value);
 
-        $this->assertInstanceOf(IncludeExtractorInterface::class, $extractor);
+        $this->assertIsCallable($extractor);
         $this->assertInstanceOf(Collection::class, $collection);
         $this->assertEquals(1, $invocationCount);
         $this->assertEquals($expectedCount, $collection->count());

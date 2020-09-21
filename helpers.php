@@ -44,8 +44,8 @@ function has_includes($request) {
  * @return Collection
  */
 function to_collection($item) {
-    if ($item instanceof Enumerable) {
-        return $item;
+    if ($item instanceof Collection || $item instanceof Enumerable) {
+        return collect($item);
     } elseif ($item instanceof Paginator) {
         return collect($item->items());
     } elseif (is_array($item)) {

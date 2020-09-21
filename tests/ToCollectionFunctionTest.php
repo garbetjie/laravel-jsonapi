@@ -16,7 +16,7 @@ class ToCollectionFunctionTest extends TestCase
      * @param mixed $input
      * @param array $expected
      */
-    public function testWithInputs($input, $expected)
+    public function testWithInputs($input, array $expected)
     {
         $collection = to_collection($input);
 

@@ -12,8 +12,13 @@ of [Laravel's Resource](https://laravel.com/docs/7.x/eloquent-resources).
 
 * [Installation](#installation)
 * [Basic Usage](#basic-usage)
-    * [Converting to a resource with `JsonApiResourceInterface`](#converting-to-a-resource-with-jsonapiresourceinterface)
-    * [Converting to a resource with `ConvertibleToJsonApiResourceInterface`](#converting-to-a-resource-with-convertibletojsonapiresourceinterface)
+    * [Using `JsonApiResourceInterface`](#using-jsonapiresourceinterface)
+    * [Using `ConvertibleToJsonApiResourceInterface`](#using-convertibletojsonapiresourceinterface)
+    * [Collections of resources](#using-collections)
+* Loading includes. _(Still to be documented)_
+* Extracting resources for including. _(Still to be documented)_
+* Pagination and filters. _(Still to be documented)_
+* [Changelog](#changelog)
 
 ## Installation
 
@@ -28,13 +33,13 @@ This can be done through creating your own resources that extend `JsonApiResourc
 of `JsonApiResource` directly, and passing in a value that can be converted to a resource (see the following sections
 on how to do this). 
 
-### Converting to a resource with `JsonApiResourceInterface`
+### Using `JsonApiResourceInterface`
 
 When implementing `Garbetjie\Laravel\JsonApi\JsonApiResourceInterface`, the object that is implementing the interface is
 directly responsible for representing itself as a JSON:API resource. This means that _any_ object can be used to represent
 a JSON:API resource.
 
-It is __recommended__ that an instance of an [Eloquent Resource](https://laravel.com/docs/7.x/eloquent-resources)
+The easiest way of doing this is ensuring that an instance of an [Eloquent Resource](https://laravel.com/docs/7.x/eloquent-resources)
 implements this interface, as there are a number of helper methods available that make it easier to work with Eloquent
 models.
 
@@ -47,10 +52,13 @@ use Garbetjie\Laravel\JsonApi\JsonApiResource;
 use Garbetjie\Laravel\JsonApi\JsonApiResourceInterface;
 use Illuminate\Http\Resources\MissingValue;
 
+/**
+ * @property User $resource
+ */
 class UserResource extends JsonApiResource implements JsonApiResourceInterface
 {
     public function getJsonApiId() {
-        return $this->getKey();
+        return $this->resource->getKey();
     }
 
     public function getJsonApiLinks($request) {
@@ -66,9 +74,9 @@ class UserResource extends JsonApiResource implements JsonApiResourceInterface
 
     public function getJsonApiAttributes($request) {
         return [
-            'name' => $this->first_name,
-            'displayName' => trim("{$this->first_name} {$this->last_name}"),
-            'attribute' => $this->has_attribute ? $this->has_attribute : new MissingValue(),
+            'name' => $this->resource->first_name,
+            'displayName' => trim("{$this->resource->first_name} {$this->resource->last_name}"),
+            'attribute' => $this->resource->has_attribute ? $this->resource->has_attribute : new MissingValue(),
         ];
     }
 
@@ -108,7 +116,7 @@ class UsersController extends Controller
 }
 ```
 
-### Converting to a resource with `ConvertibleToJsonApiResourceInterface`
+### Using `ConvertibleToJsonApiResourceInterface`
 
 When implementing `Garbetjie\Laravel\JsonApi\ConvertibleToJsonApiResourceInterface`, you are essentially delegating the
 implementation of the resource conversion to a different object (one that would typically implement the 
@@ -133,7 +141,33 @@ class User extends Model implements ConvertibleToJsonApiResourceInterface
 }
 ```
 
+
+### Using Collections
+
+Working with collections of resources is not much different to working with a single resource. Instead of creating a new
+instance of your resource, simply make use of the `::collection()` static method, as shown below.
+
+All items in the collection provided need to implement either `JsonApiResourceInterface` or `ConvertibleToJsonApiResourceInterface`
+in order to be present in the output.
+
+```php
+<?php
+class UsersController extends Controller
+{
+    public function index()
+    {
+        return UserResource::collection(User::query()->all());
+        // or
+        return UserResource::collection(User::paginate(15));
+    }
+}
+```
+
 ## Changelog
+
+* **0.7.0**
+    * Add more tests to catch values passed to include loaders & extractors.
+    * Ensure that include loaders & extractors always receive a collection of the original objects, and not of resources.
 
 * **.0.6.1**
     * Remove trailing comma after function argument causing errors.

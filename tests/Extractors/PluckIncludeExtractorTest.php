@@ -5,24 +5,25 @@ namespace Garbetjie\Laravel\JsonApi\Tests\Extractors;
 use Garbetjie\Laravel\JsonApi\IncludeExtractorInterface;
 use Garbetjie\Laravel\JsonApi\Extractors\PluckIncludeExtractor;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use PHPUnit\Framework\TestCase;
 use function collect;
 
-class PluckExtractorTest extends TestCase
+class PluckIncludeExtractorTest extends TestCase
 {
     /**
      * @dataProvider valueProvider
      *
      * @param string|array $paths
-     * @param Model $model
+     * @param Model|Collection $model
      * @param array $expected
      */
-    public function testPluckPaths($paths, $model, $expected)
+    public function testPluckPaths($paths, $model, array $expected)
     {
         $extractor = new PluckIncludeExtractor($paths);
         $collection = $extractor($model);
 
-        $this->assertInstanceOf(IncludeExtractorInterface::class, $extractor);
+        $this->assertIsCallable($extractor);
         $this->assertCount(count($expected), $collection);
 
         // Ensure that the returned values match those in the collection.
