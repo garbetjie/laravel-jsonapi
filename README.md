@@ -165,6 +165,9 @@ class UsersController extends Controller
 
 ## Changelog
 
+* **0.7.1**
+    * Add support for Laravel 8.
+
 * **0.7.0**
     * Add more tests to catch values passed to include loaders & extractors.
     * Ensure that include loaders & extractors always receive a collection of the original objects, and not of resources.
