@@ -165,6 +165,10 @@ class UsersController extends Controller
 
 ## Changelog
 
+* **0.8.0**
+    * Fix bug where pagination parameters were being lost, and add tests for this.
+    * Add configuration parameter to automatically strip null pagination links.
+
 * **0.7.1**
     * Add support for Laravel 8.
 

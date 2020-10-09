@@ -12,9 +12,42 @@ use Illuminate\Support\Collection;
 use JsonSchema\Validator;
 use function app;
 use function collect;
+use function config;
 
 class JsonApiResourceCollectionTest extends TestCase
 {
+    public function testPaginationParametersAreProduced()
+    {
+        $stub = $this->createResourceableInterfaceStub();
+        $paginator = new LengthAwarePaginator([$stub], 1, 1);
+        $json = $this->convertResourceToResponse(JsonApiResource::collection($paginator), new Request());
+
+        $this->assertIsObject($json);
+        $this->assertObjectHasAttribute('meta', $json);
+        $this->assertObjectHasAttribute('total', $json->meta);
+        $this->assertEquals(1, $json->meta->total);
+
+        $this->assertObjectHasAttribute('links', $json);
+        $this->assertObjectHasAttribute('first', $json->links);
+    }
+
+    public function testPaginationLinkRemoval()
+    {
+        $stub = $this->createResourceableInterfaceStub();
+        $paginator = new LengthAwarePaginator([$stub], 1, 1);
+
+        config()->set('garbetjie-jsonapi.strip_empty_links', true);
+        $json = $this->convertResourceToResponse(JsonApiResource::collection($paginator), new Request());
+        $this->assertObjectHasAttribute('links', $json);
+        $this->assertObjectNotHasAttribute('next', $json->links);
+
+        config()->set('garbetjie-jsonapi.strip_empty_links', false);
+        $json = $this->convertResourceToResponse(JsonApiResource::collection($paginator), new Request());
+        $this->assertObjectHasAttribute('links', $json);
+        $this->assertObjectHasAttribute('next', $json->links);
+        $this->assertNull($json->links->next);
+    }
+
     /**
      * @param string $methodName
      * @param mixed $inputValue

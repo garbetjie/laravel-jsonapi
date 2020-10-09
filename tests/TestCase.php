@@ -9,9 +9,19 @@ use Garbetjie\Laravel\JsonApi\JsonApiResourceInterface;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Events\Dispatcher;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceResponse;
 use Illuminate\Http\Resources\MissingValue;
+use Illuminate\Routing\Redirector;
+use Illuminate\Routing\RouteCollection;
+use Illuminate\Routing\RouteCollectionInterface;
+use Illuminate\Routing\UrlGenerator;
+use Illuminate\View\Engines\EngineResolver;
+use Illuminate\View\Factory;
+use Illuminate\View\FileViewFinder;
+use Illuminate\View\ViewFinderInterface;
 use PHPUnit\Framework\MockObject\Stub;
 use ReflectionObject;
 use stdClass;
@@ -37,7 +47,12 @@ class TestCase extends \PHPUnit\Framework\TestCase
         $this->app->instance('request', $request);
         $this->app->instance(get_class($request), $request);
         $this->app->instance('config', new Repository(require __DIR__ . '/../config.php'));
-        $this->app->alias(\Illuminate\Routing\ResponseFactory::class, ResponseFactory::class);
+        $this->app->instance(\Illuminate\Contracts\View\Factory::class, new Factory(new EngineResolver(), new FileViewFinder(new Filesystem(), []), new Dispatcher()));
+        $this->app->instance(ViewFinderInterface::class, new FileViewFinder($this->app->make(Filesystem::class), []));
+        $this->app->instance(RouteCollectionInterface::class, new RouteCollection());
+        $this->app->instance(FileViewFinder::class, new FileViewFinder($this->app->make(Filesystem::class), []));
+        $this->app->instance(ResponseFactory::class, $this->app->make(\Illuminate\Routing\ResponseFactory::class));
+        $this->app->instance(\Illuminate\Contracts\Events\Dispatcher::class, new Dispatcher());
     }
 
     /**
@@ -48,22 +63,7 @@ class TestCase extends \PHPUnit\Framework\TestCase
      */
     protected function convertResourceToResponse($resource, Request $request): stdClass
     {
-        $resourceResponse = new ResourceResponse($resource);
-
-        $ref = new ReflectionObject($resourceResponse);
-        $method = $ref->getMethod('wrap');
-        $method->setAccessible(true);
-
-        return json_decode(
-            json_encode(
-                $method->invoke(
-                    $resourceResponse,
-                    $resource->resolve($request),
-                    $resource->with($request),
-                    $resource->additional
-                )
-            )
-        );
+        return json_decode($resource->toResponse($request)->content());
     }
 
     protected function createResourceableInterfaceStub(

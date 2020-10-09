@@ -1,6 +1,10 @@
 <?php
 
 return [
+    // When true, any pagination links that are `null` will be removed. If this is not set to true, and the links are not
+    // removed, the response will not conform to the JSON:API spec.
+    'strip_empty_links' => true,
+
     'paging' => [
         'limit' => [
             'key' => 'limit',
