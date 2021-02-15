@@ -165,6 +165,9 @@ class UsersController extends Controller
 
 ## Changelog
 
+* **0.8.1**
+    * Fix up required PHP versions - remove 7.2 and add 7.3 & 7.4.
+
 * **0.8.0**
     * Fix bug where pagination parameters were being lost, and add tests for this.
     * Add configuration parameter to automatically strip null pagination links.
