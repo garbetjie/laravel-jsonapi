@@ -39,6 +39,8 @@ class JsonApiResourceCollection extends ResourceCollection
      */
     public function toArray($request)
     {
+        $this->runLoadersIfNotRun($this->resourceAsCollection, $request);
+
         return $this->with($request) + [
             'data' => $this->collection->map->toArray($request)->all(),
             'included' => $this->buildJsonApiIncludes($this->resourceAsCollection, $request)
