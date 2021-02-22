@@ -31,6 +31,8 @@ trait IncludesRelations
      */
     protected $includeExtractors = [];
 
+    protected $loadersRun = false;
+
     /**
      * Set the includes that are loaded & used when nothing is specified in the URL.
      *
@@ -43,6 +45,29 @@ trait IncludesRelations
         $this->defaultIncludes = $defaultIncludes;
 
         return $this;
+    }
+
+    protected function runLoadersIfNotRun($resource, Request $request)
+    {
+        if ($this->loadersRun) {
+            return;
+        }
+
+        $this->loadersRun = true;
+
+        // Get the includes to use.
+        $includes = has_includes($request) ? parse_includes($request) : $this->defaultIncludes;
+
+        if (count($includes) < 1) {
+            return;
+        }
+
+        // Call the loaders.
+        foreach ($includes as $include) {
+            foreach ($this->includeLoaders[$include] ?? [] as $loader) {
+                $loader($resource);
+            }
+        }
     }
 
     /**
@@ -101,11 +126,7 @@ trait IncludesRelations
         }
 
         // Call the loaders.
-        foreach ($includes as $include) {
-            foreach ($this->includeLoaders[$include] ?? [] as $loader) {
-                $loader($resource);
-            }
-        }
+        $this->runLoadersIfNotRun($resource, $request);
 
         $all = collect([]);
         $includeMode = strtolower(config('garbetjie-jsonapi.include_mode'));

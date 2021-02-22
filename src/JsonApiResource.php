@@ -35,6 +35,9 @@ class JsonApiResource extends JsonResource
             throw new InvalidArgumentException("Provided resource must be one of " . JsonApiResourceInterface::class . ' or ' . ConvertibleToJsonApiResourceInterface::class);
         }
 
+        // Run the loaders if not already run.
+        $this->runLoadersIfNotRun($resource, $request);
+
         $type = $resource->getJsonApiType();
         $id = $resource->getJsonApiId();
 
