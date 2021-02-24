@@ -36,7 +36,7 @@ class JsonApiResource extends JsonResource
         }
 
         // Run the loaders if not already run.
-        $this->runLoadersIfNotRun($resource, $request);
+        $this->runLoadersIfNotRun($this->resource, $request);
 
         $type = $resource->getJsonApiType();
         $id = $resource->getJsonApiId();
